@@ -2,6 +2,7 @@
     Reinforcement Learning for Pong!
 """
 
+import os
 import gym
 import argparse
 import numpy as np
@@ -127,7 +128,7 @@ def normal_discounted_reward(episode_buffer: EpisodeBuffer, discount_factor: flo
     return discounted_reward
 
 
-def main(resume: bool = False, show: bool = False) -> None:
+def main(load_fname: str, save_dir: str, render: bool) -> None:
     """
         Main training loop.
     """
@@ -139,12 +140,12 @@ def main(resume: bool = False, show: bool = False) -> None:
     rmsprop_decay = 0.9
     rmsprop_smoothing = 1e-5
 
-    if resume:
-        saved = pkl.load(open('save.pkl', 'rb'))
+    if load_fname is not None:
+        saved = pkl.load(open(load_fname, 'rb'))
         model = saved['model']
         moving_grad_rms = saved['moving_grad_rms']
         episode_number = saved['episode_number']
-        print('Resuming saved model in \'save.pkl\'.')
+        print('Resuming saved model in \'{}\'.'.format(load_fname))
     else:
         model = {
             'wh': np.random.randn(hidden_layer_size, input_layer_size) / np.sqrt(input_layer_size),
@@ -180,7 +181,7 @@ def main(resume: bool = False, show: bool = False) -> None:
         }
 
         while not episode_done:
-            if show:
+            if render:
                 env.render()
 
             # generate input vector
@@ -227,17 +228,21 @@ def main(resume: bool = False, show: bool = False) -> None:
                     batch_rewards = []
 
                 # save model
-                if episode_number % 50 == 0 and episode_number != 0:
+                if episode_number % 50 == 0 and save_dir is not None:
+                    if not os.path.exists(save_dir):
+                        os.makedirs(save_dir)
+                    save_fname = os.path.join(save_dir, 'save_{}.pkl'.format(episode_number))
                     pkl.dump({'model': model, 'moving_grad_rms': moving_grad_rms, 
-                            'episode_number': episode_number}, open('save.pkl', 'wb'))
-                    print('Model saved to \'save.pkl\'!')
+                            'episode_number': episode_number}, open(save_fname, 'wb'))
+                    print('Model saved to \'{}\'!'.format(save_fname))
 
     env.close()
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train an RL agent to play the mighty game of Pong.')
-    parser.add_argument('-r', '--resume', action="store_true", default=False)
-    parser.add_argument('-s', '--show', action="store_true", default=False)
+    parser.add_argument('-l', '--load', action="store", default=None, help='path to the saved model to load from')
+    parser.add_argument('-s', '--save', action="store", default=None, help='path to the folder to save model')
+    parser.add_argument('-r', '--render', action="store_true", default=False, help='whether to render the environment or not')
     args = parser.parse_args()
-    main(resume=args.resume, show=args.show)
+    main(load_fname=args.load, save_dir=args.save, render=args.render)
