@@ -138,7 +138,7 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
     batch_size = 10
     input_layer_size = 6400
     hidden_layer_size = 200
-    learning_rate = 1e-4
+    learning_rate = 1e-3
     discount_factor = .99
     rmsprop_decay = .99
     rmsprop_smoothing = 1e-5
