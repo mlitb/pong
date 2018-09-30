@@ -221,7 +221,7 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
                     for key in model:
                         moving_grad_rms[key] = rmsprop_decay * moving_grad_rms[key] + \
                                 (1 - rmsprop_decay) * (batch_gradient_buffer[key] ** 2)
-                        model[key] -= batch_gradient_buffer[key] * learning_rate / \
+                        model[key] += batch_gradient_buffer[key] * learning_rate / \
                                 (np.sqrt(moving_grad_rms[key]) + rmsprop_smoothing)
                         batch_gradient_buffer[key] = np.zeros_like(model[key])
                     
