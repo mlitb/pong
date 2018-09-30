@@ -35,7 +35,7 @@ Arguments :
 2. Nicholas Rianto Putra https://github.com/nicholaz99
 3. Abram Perdanaputra https://github.com/abrampers
 
-### Words from Author
+### Words from Authors
 Thanks to Andrej Karpathy for his amazing blogpost about [Deep Reinforcement Learning: Pong from Pixels](http://karpathy.github.io/2016/05/31/rl/).
 > *"It shouldn’t work, but amusingly we live in a universe where it does" - Andrej Karpathy*
 
