@@ -74,15 +74,11 @@ def backward(model: Model, episode_buffer: EpisodeBuffer, episode_reward: np.nda
     h = np.vstack(episode_buffer['h'])
     ph = np.vstack(episode_buffer['ph'])
     x = np.vstack(episode_buffer['x'])
-
-    grad_y = y - y_true
-    adv_grad_y = grad_y * episode_reward # advantage based on reward
-    grad_py = y * (1.0 - y) * adv_grad_y # sigmoid prime
-    grad_wo = np.dot(grad_py.T, h)
     
-    # grad_logp = y - y_true
-    # adv_grad_logp = grad_logp * episode_reward # advantage based on reward
-    # grad_wo = np.dot(adv_grad_logp.T, h)
+    # grad_y = y - y_true
+    # adv_grad_y = grad_y * episode_reward # advantage based on reward
+    # grad_py = y * (1.0 - y) * adv_grad_y # sigmoid prime
+    # grad_wo = np.dot(grad_py.T, h)
 
     # print('grad_y', grad_y.shape)
     # print('episode_reward', episode_reward.shape)
@@ -92,11 +88,7 @@ def backward(model: Model, episode_buffer: EpisodeBuffer, episode_reward: np.nda
     # print('wo', model['wo'].shape)
     # print()
 
-    grad_h = np.dot(grad_py, model['wo'])
-    grad_ph = relu_prime(ph) * grad_h
-    grad_wh = np.dot(grad_ph.T, x)
-    
-    # grad_h = np.dot(adv_grad_logp, model['wo'])
+    # grad_h = np.dot(grad_py, model['wo'])
     # grad_ph = relu_prime(ph) * grad_h
     # grad_wh = np.dot(grad_ph.T, x)
 
@@ -107,6 +99,17 @@ def backward(model: Model, episode_buffer: EpisodeBuffer, episode_reward: np.nda
     # print('grad_wh', grad_wh.shape)
     # print('wh', model['wh'].shape)
     # print()
+
+    # since we use a loss function that maximizes the log likelihood of the 
+    # probability (y) (see http://cs231n.github.io/neural-networks-2/#losses 
+    # section 'Attribute classification' for more detail), the gradient of the 
+    # loss function on py should be:
+    grad_py = y_true - y
+    adv_grad_py = grad_py * episode_reward # advantage based on reward
+    grad_wo = np.dot(adv_grad_py.T, h)
+    grad_h = np.dot(adv_grad_py, model['wo'])
+    grad_ph = relu_prime(ph) * grad_h
+    grad_wh = np.dot(grad_ph.T, x)
 
     return {'wh': grad_wh, 'wo': grad_wo}
 
@@ -135,9 +138,9 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
     batch_size = 10
     input_layer_size = 6400
     hidden_layer_size = 200
-    learning_rate = 1e-3
+    learning_rate = 1e-4
     discount_factor = .99
-    rmsprop_decay = 0.9
+    rmsprop_decay = .99
     rmsprop_smoothing = 1e-5
 
     if load_fname is not None:
