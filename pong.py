@@ -43,11 +43,6 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(-x))
 
 
-def sigmoid_prime(x: np.ndarray) -> np.ndarray:
-    s = sigmoid(x)
-    return s * (1.0 - s)
-
-
 def forward(x: np.ndarray, model: Model, episode_buffer: EpisodeBuffer) -> float:
     """
         Do a forward pass to get the probability of moving the paddle up.
@@ -74,31 +69,6 @@ def backward(model: Model, episode_buffer: EpisodeBuffer, episode_reward: np.nda
     h = np.vstack(episode_buffer['h'])
     ph = np.vstack(episode_buffer['ph'])
     x = np.vstack(episode_buffer['x'])
-    
-    # grad_y = y - y_true
-    # adv_grad_y = grad_y * episode_reward # advantage based on reward
-    # grad_py = y * (1.0 - y) * adv_grad_y # sigmoid prime
-    # grad_wo = np.dot(grad_py.T, h)
-
-    # print('grad_y', grad_y.shape)
-    # print('episode_reward', episode_reward.shape)
-    # print('adv_grad_y', adv_grad_y.shape)
-    # print('grad_py', grad_py.shape)
-    # print('grad_wo', grad_wo.shape)
-    # print('wo', model['wo'].shape)
-    # print()
-
-    # grad_h = np.dot(grad_py, model['wo'])
-    # grad_ph = relu_prime(ph) * grad_h
-    # grad_wh = np.dot(grad_ph.T, x)
-
-    # print('grad_y', grad_y.shape)
-    # print('grad_py', grad_py.shape)
-    # print('grad_h', grad_h.shape)
-    # print('grad_ph', grad_ph.shape)
-    # print('grad_wh', grad_wh.shape)
-    # print('wh', model['wh'].shape)
-    # print()
 
     # since we use a loss function that maximizes the log likelihood of the 
     # probability (y) (see http://cs231n.github.io/neural-networks-2/#losses 
