@@ -54,7 +54,7 @@ def forward(x: np.ndarray, model: Model, episode_buffer: EpisodeBuffer) -> float
     episode_buffer['x'].append(x)
     episode_buffer['ph'].append(ph)
     episode_buffer['h'].append(h)
-    episode_buffer['py'].append(py)
+    episode_buffer['y'].append(y)
     return y
 
 
@@ -63,7 +63,7 @@ def backward(model: Model, episode_buffer: EpisodeBuffer, episode_reward: np.nda
         Do a backward pass to get the gradient of the network weights.
     """
     y_true = np.vstack(episode_buffer['y_true'])
-    py = np.vstack(episode_buffer['py'])
+    y = np.vstack(episode_buffer['y'])
     h = np.vstack(episode_buffer['h'])
     ph = np.vstack(episode_buffer['ph'])
     x = np.vstack(episode_buffer['x'])
@@ -73,7 +73,7 @@ def backward(model: Model, episode_buffer: EpisodeBuffer, episode_reward: np.nda
     # section 'Attribute classification' for more details), so the gradient of the 
     # log likelihood function on py should be:
     grad_py = y_true - y
-    
+
     adv_grad_py = grad_py * episode_reward # advantage based on reward
     grad_wo = np.dot(adv_grad_py.T, h)
     grad_h = np.dot(adv_grad_py, model['wo'])
@@ -106,10 +106,10 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
     """
     batch_size = 10
     input_layer_size = 6400
-    hidden_layer_size = 200
+    hidden_layer_size = 400
     learning_rate = 1e-3
     discount_factor = .99
-    rmsprop_decay = .99
+    rmsprop_decay = .90
     rmsprop_smoothing = 1e-5
 
     if load_fname is not None:
@@ -146,7 +146,7 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
             'x': [], # input vector
             'ph': [], # product of hidden layer
             'h': [], # activation of hidden layer
-            'py': [], # product of output layer
+            'y': [], # activation of output layer, probability of taking action 'UP'
             'y_true': [], # fake label
             'reward': [] # rewards
         }
