@@ -55,7 +55,6 @@ def forward(x: np.ndarray, model: Model, episode_buffer: EpisodeBuffer) -> float
     episode_buffer['ph'].append(ph)
     episode_buffer['h'].append(h)
     episode_buffer['py'].append(py)
-    episode_buffer['y'].append(y)
     return y
 
 
@@ -64,17 +63,17 @@ def backward(model: Model, episode_buffer: EpisodeBuffer, episode_reward: np.nda
         Do a backward pass to get the gradient of the network weights.
     """
     y_true = np.vstack(episode_buffer['y_true'])
-    y = np.vstack(episode_buffer['y'])
     py = np.vstack(episode_buffer['py'])
     h = np.vstack(episode_buffer['h'])
     ph = np.vstack(episode_buffer['ph'])
     x = np.vstack(episode_buffer['x'])
 
-    # since we use a loss function that maximizes the log likelihood of the 
-    # probability (y) (see http://cs231n.github.io/neural-networks-2/#losses 
-    # section 'Attribute classification' for more detail), the gradient of the 
-    # loss function on py should be:
+    # the objective here is to maximize the log likelihood of y_true being chosen
+    # (given the probability y) (see http://cs231n.github.io/neural-networks-2/#losses 
+    # section 'Attribute classification' for more details), so the gradient of the 
+    # log likelihood function on py should be:
     grad_py = y_true - y
+    
     adv_grad_py = grad_py * episode_reward # advantage based on reward
     grad_wo = np.dot(adv_grad_py.T, h)
     grad_h = np.dot(adv_grad_py, model['wo'])
@@ -148,7 +147,6 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
             'ph': [], # product of hidden layer
             'h': [], # activation of hidden layer
             'py': [], # product of output layer
-            'y': [], # activation of output layer (prob of moving up)
             'y_true': [], # fake label
             'reward': [] # rewards
         }
@@ -184,7 +182,7 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
                 episode_number += 1
 
                 # training info
-                # print('Episode: {}, rewards: {}'.format(episode_number, sum(episode_buffer['reward'])))
+                print('Episode: {}, rewards: {}'.format(episode_number, sum(episode_buffer['reward'])))
 
                 # parameter update (rmsprop)
                 if episode_number % batch_size == 0:
@@ -196,7 +194,7 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
                         batch_gradient_buffer[key] = np.zeros_like(model[key])
                     
                     # training info
-                    print('Batch: {}, avg_episode_reward: {}'.format(episode_number // batch_size, 
+                    print('Batch: {}, avg episode rewards: {}'.format(episode_number // batch_size, 
                             sum(batch_rewards) / len(batch_rewards)))
                     batch_rewards = []
 
