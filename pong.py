@@ -35,8 +35,8 @@ def relu(x: np.ndarray) -> np.ndarray:
 
 
 def relu_prime(x: np.ndarray) -> np.ndarray:
-    x[x > 0] = 1
-    return x
+    y = np.zeros_like(x)[x > 0] = 1
+    return y
 
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
@@ -106,7 +106,7 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
     """
     batch_size = 10
     input_layer_size = 6400
-    hidden_layer_size = 400
+    hidden_layer_size = 200
     learning_rate = 1e-3
     discount_factor = .99
     rmsprop_decay = .90
@@ -182,7 +182,7 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
                 episode_number += 1
 
                 # training info
-                print('Episode: {}, rewards: {}'.format(episode_number, sum(episode_buffer['reward'])))
+                # print('Episode: {}, rewards: {}'.format(episode_number, sum(episode_buffer['reward'])))
 
                 # parameter update (rmsprop)
                 if episode_number % batch_size == 0:
