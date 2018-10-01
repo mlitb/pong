@@ -1,5 +1,10 @@
 """
     Reinforcement Learning for Pong!
+    More Info : https://github.com/mlitb/pong
+    Authors:
+    1. Faza Fahleraz https://github.com/ffahleraz
+    2. Nicholas Rianto Putra https://github.com/nicholaz99
+    3. Abram Perdanaputra https://github.com/abrampers
 """
 
 import os
@@ -35,8 +40,8 @@ def relu(x: np.ndarray) -> np.ndarray:
 
 
 def relu_prime(x: np.ndarray) -> np.ndarray:
-    x[x > 0] = 1
-    return x
+    y = np.zeros_like(x)[x > 0] = 1
+    return y
 
 
 def sigmoid(x: np.ndarray) -> np.ndarray:
@@ -76,11 +81,12 @@ def backward(model: Model, episode_buffer: EpisodeBuffer, episode_reward: np.nda
     ph1 = np.vstack(episode_buffer['ph1'])
     x = np.vstack(episode_buffer['x'])
 
-    # since we use a loss function that maximizes the log likelihood of the 
-    # probability (y) (see http://cs231n.github.io/neural-networks-2/#losses 
-    # section 'Attribute classification' for more detail), the gradient of the 
-    # loss function on py should be:
+    # the objective here is to maximize the log likelihood of y_true being chosen
+    # (given the probability y) (see http://cs231n.github.io/neural-networks-2/#losses 
+    # section 'Attribute classification' for more details), so the gradient of the 
+    # log likelihood function on py should be:
     grad_py = y_true - y
+
     adv_grad_py = grad_py * episode_reward # advantage based on reward
     grad_wo = np.dot(adv_grad_py.T, h2)
     grad_h2 = np.dot(adv_grad_py, model['wo'])
@@ -120,7 +126,7 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
     hidden_layer_size_2 = 200
     learning_rate = 1e-3
     discount_factor = .99
-    rmsprop_decay = .99
+    rmsprop_decay = .90
     rmsprop_smoothing = 1e-5
 
     if load_fname is not None:
@@ -211,7 +217,7 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
                         batch_gradient_buffer[key] = np.zeros_like(model[key])
                     
                     # training info
-                    print('Batch: {}, avg_episode_reward: {}'.format(episode_number // batch_size, 
+                    print('Batch: {}, avg episode rewards: {}'.format(episode_number // batch_size, 
                             sum(batch_rewards) / len(batch_rewards)))
                     batch_rewards = []
 
