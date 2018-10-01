@@ -1,5 +1,10 @@
 """
     Reinforcement Learning for Pong!
+    More Info : https://github.com/mlitb/pong
+    Authors:
+    1. Faza Fahleraz https://github.com/ffahleraz
+    2. Nicholas Rianto Putra https://github.com/nicholaz99
+    3. Abram Perdanaputra https://github.com/abrampers
 """
 
 import os
