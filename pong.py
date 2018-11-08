@@ -54,13 +54,18 @@ def forward(x: np.ndarray, model: Model, episode_buffer: EpisodeBuffer) -> float
     """
         Do a forward pass to get the probability of moving the paddle up.
     """
-    ph = np.dot(model['wh'], x)
-    h = relu(ph)
-    py = np.dot(model['wo'], h)
+    ph1 = np.dot(model['wh1'], x)
+    h1 = relu(ph1)
+    ph2 = np.dot(model['wh2'], h1)
+    h2 = relu(ph2)
+    py = np.dot(model['wo'], h2)
     y = sigmoid(py)
     episode_buffer['x'].append(x)
-    episode_buffer['ph'].append(ph)
-    episode_buffer['h'].append(h)
+    episode_buffer['ph1'].append(ph1)
+    episode_buffer['h1'].append(h1)
+    episode_buffer['ph2'].append(ph2)
+    episode_buffer['h2'].append(h2)
+    episode_buffer['py'].append(py)
     episode_buffer['y'].append(y)
     return y
 
@@ -71,8 +76,11 @@ def backward(model: Model, episode_buffer: EpisodeBuffer, episode_reward: np.nda
     """
     y_true = np.vstack(episode_buffer['y_true'])
     y = np.vstack(episode_buffer['y'])
-    h = np.vstack(episode_buffer['h'])
-    ph = np.vstack(episode_buffer['ph'])
+    py = np.vstack(episode_buffer['py'])
+    h2 = np.vstack(episode_buffer['h2'])
+    ph2 = np.vstack(episode_buffer['ph2'])
+    h1 = np.vstack(episode_buffer['h1'])
+    ph1 = np.vstack(episode_buffer['ph1'])
     x = np.vstack(episode_buffer['x'])
 
     # the objective here is to maximize the log likelihood of y_true being chosen
@@ -82,12 +90,15 @@ def backward(model: Model, episode_buffer: EpisodeBuffer, episode_reward: np.nda
     grad_py = y_true - y
 
     adv_grad_py = grad_py * episode_reward # advantage based on reward
-    grad_wo = np.dot(adv_grad_py.T, h)
-    grad_h = np.dot(adv_grad_py, model['wo'])
-    grad_ph = relu_prime(ph) * grad_h
-    grad_wh = np.dot(grad_ph.T, x)
+    grad_wo = np.dot(adv_grad_py.T, h2)
+    grad_h2 = np.dot(adv_grad_py, model['wo'])
+    grad_ph2 = relu_prime(ph2) * grad_h2
+    grad_wh2 = np.dot(grad_ph2.T, h1)
+    grad_h1 = np.dot(grad_ph2, model['wh2'])
+    grad_ph1 = relu_prime(ph1) * grad_h1
+    grad_wh1 = np.dot(grad_ph1.T, x)
 
-    return {'wh': grad_wh, 'wo': grad_wo}
+    return {'wh1': grad_wh1, 'wh2': grad_wh2, 'wo': grad_wo}
 
 
 def normal_discounted_reward(episode_buffer: EpisodeBuffer, discount_factor: float) -> float:
@@ -113,7 +124,8 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
     """
     batch_size = 10
     input_layer_size = 6400
-    hidden_layer_size = 200
+    hidden_layer_size_1 = 800
+    hidden_layer_size_2 = 200
     learning_rate = 1e-3
     discount_factor = .99
     rmsprop_decay = .90
@@ -127,18 +139,21 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
         print('Resuming saved model in \'{}\'.'.format(load_fname))
     else:
         model = {
-            'wh': np.random.randn(hidden_layer_size, input_layer_size) / np.sqrt(input_layer_size),
-            'wo': np.random.randn(1, hidden_layer_size) / np.sqrt(hidden_layer_size),
+            'wh1': np.random.randn(hidden_layer_size_1, input_layer_size) / np.sqrt(input_layer_size),
+            'wh2': np.random.randn(hidden_layer_size_2, hidden_layer_size_1) / np.sqrt(hidden_layer_size_1),
+            'wo': np.random.randn(1, hidden_layer_size_2) / np.sqrt(hidden_layer_size_2),
         }
         moving_grad_rms = {
-            'wh': np.zeros_like(model['wh']),
+            'wh1': np.zeros_like(model['wh1']),
+            'wh2': np.zeros_like(model['wh2']),
             'wo': np.zeros_like(model['wo']),
         }
         episode_number = 0
 
     batch_gradient_buffer = {
-        'wh': np.zeros_like(model['wh']),
-        'wo': np.zeros_like(model['wo']),
+        'wh1': np.zeros_like(model['wh1']),
+            'wh2': np.zeros_like(model['wh2']),
+            'wo': np.zeros_like(model['wo']),
     }
     batch_rewards = []
 
@@ -151,9 +166,12 @@ def main(load_fname: str, save_dir: str, render: bool) -> None:
         
         episode_buffer = {
             'x': [], # input vector
-            'ph': [], # product of hidden layer
-            'h': [], # activation of hidden layer
-            'y': [], # activation of output layer, probability of taking action 'UP'
+            'ph1': [], # product of hidden layer
+            'h1': [], # activation of hidden layer
+            'ph2': [], # product of hidden layer
+            'h2': [], # activation of hidden layer
+            'py': [], # product of output layer
+            'y': [], # activation of output layer (prob of moving up)
             'y_true': [], # fake label
             'reward': [] # rewards
         }
